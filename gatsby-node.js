@@ -62,6 +62,7 @@ exports.createPages = async ({ graphql, actions }) => {
 					date(formatString: "Do MMM YYYY HH:mm")
 					title
 					content
+					slug
 				  }
 				}
 			  }  
