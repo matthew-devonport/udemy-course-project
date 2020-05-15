@@ -59,7 +59,7 @@ exports.createPages = async ({ graphql, actions }) => {
 				  node{
 					excerpt
 					wordpress_id
-					date
+					date(formatString: "Do MMM YYYY HH:mm")
 					title
 					content
 				  }
