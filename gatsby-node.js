@@ -1,6 +1,6 @@
 const path = require(`path`)
 const slash = require(`slash`)
- 
+
 // Implement the Gatsby API “createPages”. This is
 // called after the Gatsby bootstrap is finished so you have
 // access to any information necessary to programmatically
@@ -10,7 +10,7 @@ const slash = require(`slash`)
 exports.createPages = async ({ graphql, actions }) => {
 	const { createPage, createRedirect } = actions
 	createRedirect({ fromPath: '/', toPath: '/home', redirectInBrowser: true, isPermanent: true })
- 
+
 	// The “graphql” function allows us to run arbitrary
 	// queries against the local Gatsby GraphQL schema. Think of
 	// it like the site has a built-in database constructed
@@ -54,29 +54,40 @@ exports.createPages = async ({ graphql, actions }) => {
 				  }
 				}
 			  }
+			  allWordpressPost{
+				edges{
+				  node{
+					excerpt
+					wordpress_id
+					date
+					title
+					content
+				  }
+				}
+			  }  
 		}
 	`)
- 
+
 	// Check for any errors
 	if (result.errors) {
 		throw new Error(result.errors)
 	}
- 
+
 	// Access query results via object destructuring
 	const { wordpressPage, allWordpressPage, allWordpressWpPortfolio } = result.data
- 
+
 	// Create Page pages.
 	const pageTemplate = path.resolve(`./src/templates/page.js`)
-	const portfolioUnderContentTemplate = path.resolve(`./src/templates/portolioUnderContent.js`)	
+	const portfolioUnderContentTemplate = path.resolve(`./src/templates/portolioUnderContent.js`)
 	// We want to create a detailed page for each page node.
 	// The path field contains the relative original WordPress link
 	// and we use it for the slug to preserve url structure.
 	// The Page ID is prefixed with 'PAGE_'
 	createPage({
-    path: `/`,
-    component: slash(pageTemplate),
-    context: wordpressPage
-  })
+		path: `/`,
+		component: slash(pageTemplate),
+		context: wordpressPage
+	})
 	allWordpressPage.edges.forEach(edge => {
 		// Gatsby uses Redux to manage its internal state.
 		// Plugins and sites can use functions like "createPage"
@@ -90,8 +101,25 @@ exports.createPages = async ({ graphql, actions }) => {
 			component: slash(edge.node.template === 'portfolio_under_content.php' ? portfolioUnderContentTemplate : pageTemplate),
 			context: edge.node,
 		})
+		const posts = result.data.allWordpressPost.edges
+		const postsPerPage = 2
+		const numberOfPages = Math.ceil(posts.length / postsPerPage)
+		const blogPostListTemplate = path.resolve('./src/templates/blogPostList.js')
+
+		Array.from({ length: numberOfPages }).forEach((page, index) => {
+			createPage({
+				component: slash(blogPostListTemplate),
+				path: index === 0 ? `/blog` : `/blog/${index + 1}`,
+				context: {
+					posts: posts.slice(index * postsPerPage, (index * postsPerPage) + postsPerPage),
+					numberOfPages,
+					currentPage: index + 1
+				}
+			})
+		})
+
 	})
- 
+
 	const portfolioTemplate = path.resolve(`./src/templates/portfolio.js`)
 	// We want to create a detailed page for each post node.
 	// The path field stems from the original WordPress link
@@ -102,45 +130,6 @@ exports.createPages = async ({ graphql, actions }) => {
 			path: `/portfolio/${edge.node.slug}/`,
 			component: slash(portfolioTemplate),
 			context: edge.node,
-		})
-		.then(() => {
-			graphql(`
-			{
-				allWordpressPost{
-				  edges{
-					node{
-					  excerpt
-					  wordpress_id
-					  date
-					  title
-					  content
-					}
-				  }
-				}
-			  }
-			`).then(result => {
-              if(result.errors) {
-				  console.log(result.errors)
-				  reject(result.errors)
-			  }
-
-			  const posts = result.data.allWordpressPost.edges
-			  const postsPerPage = 2
-			  const numberOfPages = Math.ceil(posts.length / postsPerPage)
-
-              Array.from({length: numberOfPages}).forEach((page, index) => {
-				  createPage({
-					  path: index === 0 ? `/blog` : `/blog/${index + 1}`,
-					  context: {
-						  posts: posts.slice(index * postsPerPage, (index * postsPerPage) + postsPerPage),
-						  numberOfPages,
-						  currentPage: index + 1
-					  }
-				  })
-			  })
-
-			  resolve()
-			})
 		})
 	})
 }
