@@ -103,5 +103,44 @@ exports.createPages = async ({ graphql, actions }) => {
 			component: slash(portfolioTemplate),
 			context: edge.node,
 		})
+		.then(() => {
+			graphql(`
+			{
+				allWordpressPost{
+				  edges{
+					node{
+					  excerpt
+					  wordpress_id
+					  date
+					  title
+					  content
+					}
+				  }
+				}
+			  }
+			`).then(result => {
+              if(result.errors) {
+				  console.log(result.errors)
+				  reject(result.errors)
+			  }
+
+			  const posts = result.data.allWordpressPost.edges
+			  const postsPerPage = 2
+			  const numberOfPages = Math.ceil(posts.length / postsPerPage)
+
+              Array.from({length: numberOfPages}).forEach((page, index) => {
+				  createPage({
+					  path: index === 0 ? `/blog` : `/blog/${index + 1}`,
+					  context: {
+						  posts: posts.slice(index * postsPerPage, (index * postsPerPage) + postsPerPage),
+						  numberOfPages,
+						  currentPage: index + 1
+					  }
+				  })
+			  })
+
+			  resolve()
+			})
+		})
 	})
 }
