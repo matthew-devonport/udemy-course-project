@@ -78,16 +78,13 @@ exports.createPages = async ({ graphql, actions }) => {
 		// Gatsby uses Redux to manage its internal state.
 		// Plugins and sites can use functions like "createPage"
 		// to interact with Gatsby.
-		console.log('---------------------------------')
-		console.log(edge.node.title, edge.node.template)
-		console.log('---------------------------------')		
 		createPage({
 			// Each page is required to have a `path` as well
 			// as a template component. The `context` is
 			// optional but is often necessary so the template
 			// can query data specific to each page.
 			path: `/${edge.node.slug}/`,
-			component: slash(pageTemplate),
+			component: slash(edge.node.template === 'portfolio_under_content.php' ? portfolioUnderContentTemplate : pageTemplate),
 			context: edge.node,
 		})
 	})
